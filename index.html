@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Examination System</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">Online Examination System</div>
+            <nav class="nav-actions" id="navActions"></nav>
+        </header>
+
+        <main class="content">
+            <section class="page" id="homePage">
+                <div class="hero-card">
+                    <h1>Online Exam Platform</h1>
+                    <p>Practice exams, review results, and manage questions without any backend.</p>
+                    <div class="button-row">
+                        <button class="btn btn-primary" onclick="showPage('studentLoginPage')">Student Login</button>
+                        <button class="btn btn-secondary" onclick="showPage('adminLoginPage')">Admin Login</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page hidden" id="studentLoginPage">
+                <div class="card">
+                    <h2>Student Login</h2>
+                    <form id="studentLoginForm">
+                        <label>Email</label>
+                        <input type="email" id="studentEmail" placeholder="alice@example.com" required />
+                        <label>Password</label>
+                        <input type="password" id="studentPassword" placeholder="Enter password" required />
+                        <button class="btn btn-primary" type="submit">Login</button>
+                    </form>
+                    <p class="hint">Use <strong>alice@example.com / alicepass</strong> or <strong>bob@example.com / bobpass</strong>.</p>
+                </div>
+            </section>
+
+            <section class="page hidden" id="adminLoginPage">
+                <div class="card">
+                    <h2>Admin Login</h2>
+                    <form id="adminLoginForm">
+                        <label>Password</label>
+                        <input type="password" id="adminPassword" placeholder="Admin password" required />
+                        <button class="btn btn-primary" type="submit">Login</button>
+                    </form>
+                    <p class="hint">Default admin password: <strong>admin123</strong>.</p>
+                </div>
+            </section>
+
+            <section class="page hidden" id="studentDashboardPage">
+                <div class="card">
+                    <h2>Welcome, <span id="studentNameLabel"></span></h2>
+                    <p>Ready to take the exam? You can review your latest score after submission.</p>
+                    <div class="button-row">
+                        <button class="btn btn-primary" onclick="startExam()">Start Exam</button>
+                        <button class="btn btn-secondary" onclick="showResultPage()">View Latest Result</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page hidden" id="examPage">
+                <div class="card">
+                    <h2>Exam</h2>
+                    <p>Select the correct answer for each question.</p>
+                    <form id="examForm"></form>
+                    <button class="btn btn-primary" onclick="submitExam()">Submit Exam</button>
+                </div>
+            </section>
+
+            <section class="page hidden" id="resultPage">
+                <div class="card">
+                    <h2>Exam Result</h2>
+                    <div class="result-box" id="resultBox"></div>
+                    <div class="button-row">
+                        <button class="btn btn-primary" onclick="showPage('studentDashboardPage')">Back to Dashboard</button>
+                        <button class="btn btn-secondary" onclick="startExam()">Retake Exam</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page hidden" id="adminDashboardPage">
+                <div class="card admin-grid">
+                    <div>
+                        <h2>Admin Dashboard</h2>
+                        <form id="questionForm">
+                            <label>Question Text</label>
+                            <textarea id="questionText" rows="3" placeholder="Type the question text" required></textarea>
+                            <label>Option A</label>
+                            <input type="text" id="questionOptionA" placeholder="Option A" required />
+                            <label>Option B</label>
+                            <input type="text" id="questionOptionB" placeholder="Option B" required />
+                            <label>Option C</label>
+                            <input type="text" id="questionOptionC" placeholder="Option C" required />
+                            <label>Option D</label>
+                            <input type="text" id="questionOptionD" placeholder="Option D" required />
+                            <label>Correct Answer</label>
+                            <select id="questionAnswer" required>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                            </select>
+                            <button class="btn btn-primary" type="submit">Add Question</button>
+                        </form>
+                    </div>
+                    <div>
+                        <h3>Questions</h3>
+                        <ul class="question-list" id="questionList"></ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Recent Results</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Student</th><th>Score</th><th>Total</th><th>Date</th></tr>
+                        </thead>
+                        <tbody id="resultTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <div class="toast hidden" id="toast"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

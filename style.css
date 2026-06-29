@@ -1,0 +1,268 @@
+const students = [
+    { name: 'Alice Student', email: 'alice@example.com', password: 'alicepass' },
+    { name: 'Bob Student', email: 'bob@example.com', password: 'bobpass' }
+];
+
+const adminPassword = 'admin123';
+const defaultQuestions = [
+    {
+        id: 1,
+        text: 'Which protocol is used to load web pages?',
+        options: { A: 'FTP', B: 'HTTP', C: 'SMTP', D: 'SSH' },
+        answer: 'B'
+    },
+    {
+        id: 2,
+        text: 'What is the correct HTML tag for the largest heading?',
+        options: { A: '<h1>', B: '<heading>', C: '<head>', D: '<h6>' },
+        answer: 'A'
+    },
+    {
+        id: 3,
+        text: 'Which JavaScript method selects an element by id?',
+        options: { A: 'getElementsByName()', B: 'querySelector()', C: 'getElementById()', D: 'querySelectorAll()' },
+        answer: 'C'
+    }
+];
+
+const storageKey = 'examAppData';
+const state = {
+    student: null,
+    isAdmin: false,
+    questions: [],
+    results: []
+};
+
+const pages = {
+    homePage: document.getElementById('homePage'),
+    studentLoginPage: document.getElementById('studentLoginPage'),
+    adminLoginPage: document.getElementById('adminLoginPage'),
+    studentDashboardPage: document.getElementById('studentDashboardPage'),
+    examPage: document.getElementById('examPage'),
+    resultPage: document.getElementById('resultPage'),
+    adminDashboardPage: document.getElementById('adminDashboardPage')
+};
+
+const navActions = document.getElementById('navActions');
+const toast = document.getElementById('toast');
+const studentNameLabel = document.getElementById('studentNameLabel');
+const examForm = document.getElementById('examForm');
+const resultBox = document.getElementById('resultBox');
+const questionList = document.getElementById('questionList');
+const resultTableBody = document.getElementById('resultTableBody');
+
+function loadData() {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+        const data = JSON.parse(saved);
+        state.questions = data.questions || defaultQuestions;
+        state.results = data.results || [];
+    } else {
+        state.questions = defaultQuestions;
+        state.results = [];
+    }
+}
+
+function saveData() {
+    localStorage.setItem(storageKey, JSON.stringify({ questions: state.questions, results: state.results }));
+}
+
+function showPage(pageId) {
+    Object.values(pages).forEach(page => page.classList.add('hidden'));
+    pages[pageId].classList.remove('hidden');
+    renderNav();
+
+    if (pageId === 'adminDashboardPage') renderAdminDashboard();
+    if (pageId === 'studentDashboardPage') renderStudentDashboard();
+    if (pageId === 'resultPage') renderResultPage();
+}
+
+function renderNav() {
+    navActions.innerHTML = '';
+    if (state.student) {
+        navActions.innerHTML = `
+            <button class="btn btn-secondary" onclick="showPage('studentDashboardPage')">Dashboard</button>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        `;
+    } else if (state.isAdmin) {
+        navActions.innerHTML = `
+            <button class="btn btn-secondary" onclick="showPage('adminDashboardPage')">Admin</button>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        `;
+    } else {
+        navActions.innerHTML = `
+            <button class="btn btn-secondary" onclick="showPage('homePage')">Home</button>
+        `;
+    }
+}
+
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 2600);
+}
+
+function handleStudentLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('studentEmail').value.trim();
+    const password = document.getElementById('studentPassword').value.trim();
+
+    const student = students.find(user => user.email === email && user.password === password);
+    if (!student) {
+        showToast('Invalid student credentials.');
+        return;
+    }
+
+    state.student = student;
+    state.isAdmin = false;
+    document.getElementById('studentLoginForm').reset();
+    studentNameLabel.textContent = student.name;
+    showToast(`Welcome ${student.name}!`);
+    showPage('studentDashboardPage');
+}
+
+function handleAdminLogin(event) {
+    event.preventDefault();
+    const password = document.getElementById('adminPassword').value.trim();
+    if (password !== adminPassword) {
+        showToast('Admin password incorrect.');
+        return;
+    }
+
+    state.student = null;
+    state.isAdmin = true;
+    document.getElementById('adminLoginForm').reset();
+    showToast('Admin login successful.');
+    showPage('adminDashboardPage');
+}
+
+function renderStudentDashboard() {
+    if (!state.student) return;
+    studentNameLabel.textContent = state.student.name;
+}
+
+function startExam() {
+    if (!state.student) {
+        showToast('Please login as a student first.');
+        showPage('studentLoginPage');
+        return;
+    }
+
+    examForm.innerHTML = '';
+    state.questions.forEach((question, index) => {
+        const questionBlock = document.createElement('div');
+        questionBlock.className = 'question-block';
+        questionBlock.innerHTML = `
+            <h3>Q${index + 1}. ${question.text}</h3>
+            ${['A', 'B', 'C', 'D'].map(letter => `
+                <label>
+                    <input type="radio" name="question_${question.id}" value="${letter}" required />
+                    ${letter}. ${question.options[letter]}
+                </label>
+            `).join('')}
+        `;
+        examForm.appendChild(questionBlock);
+    });
+
+    showPage('examPage');
+}
+
+function submitExam() {
+    const formData = new FormData(examForm);
+    let score = 0;
+
+    state.questions.forEach(question => {
+        const answer = formData.get(`question_${question.id}`);
+        if (answer && answer === question.answer) score += 1;
+    });
+
+    const result = {
+        studentName: state.student.name,
+        score,
+        total: state.questions.length,
+        date: new Date().toLocaleString()
+    };
+
+    state.results.unshift(result);
+    if (state.results.length > 20) state.results.pop();
+    saveData();
+    localStorage.setItem('lastResult', JSON.stringify(result));
+    showToast('Exam submitted successfully.');
+    showPage('resultPage');
+}
+
+function renderResultPage() {
+    const lastResult = JSON.parse(localStorage.getItem('lastResult'));
+    if (!lastResult) {
+        resultBox.innerHTML = '<p>No result available yet.</p>';
+        return;
+    }
+
+    resultBox.innerHTML = `
+        <p><strong>${lastResult.studentName}</strong>, your score is <strong>${lastResult.score}</strong> out of <strong>${lastResult.total}</strong>.</p>
+        <p>Submitted on: ${lastResult.date}</p>
+    `;
+}
+
+function renderAdminDashboard() {
+    questionList.innerHTML = state.questions.map(question => `
+        <li>${question.id}. ${question.text} <span class="question-label">[Answer: ${question.answer}]</span></li>
+    `).join('');
+
+    resultTableBody.innerHTML = state.results.map(result => `
+        <tr>
+            <td>${result.studentName}</td>
+            <td>${result.score}</td>
+            <td>${result.total}</td>
+            <td>${result.date}</td>
+        </tr>
+    `).join('');
+}
+
+function handleAddQuestion(event) {
+    event.preventDefault();
+    const text = document.getElementById('questionText').value.trim();
+    const optionA = document.getElementById('questionOptionA').value.trim();
+    const optionB = document.getElementById('questionOptionB').value.trim();
+    const optionC = document.getElementById('questionOptionC').value.trim();
+    const optionD = document.getElementById('questionOptionD').value.trim();
+    const answer = document.getElementById('questionAnswer').value;
+
+    if (!text || !optionA || !optionB || !optionC || !optionD) {
+        showToast('Complete all fields before adding a question.');
+        return;
+    }
+
+    const nextId = state.questions.length ? Math.max(...state.questions.map(q => q.id)) + 1 : 1;
+    state.questions.push({ id: nextId, text, options: { A: optionA, B: optionB, C: optionC, D: optionD }, answer });
+    saveData();
+    document.getElementById('questionForm').reset();
+    showToast('Question added successfully.');
+    renderAdminDashboard();
+}
+
+function showResultPage() {
+    if (!state.student) {
+        showToast('Please login first to view results.');
+        showPage('studentLoginPage');
+        return;
+    }
+    showPage('resultPage');
+}
+
+function logout() {
+    state.student = null;
+    state.isAdmin = false;
+    showToast('Logged out successfully.');
+    showPage('homePage');
+}
+
+function init() {
+    loadData();
+    showPage('homePage');
+    document.getElementById('studentLoginForm').addEventListener('submit', handleStudentLogin);
+    document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+    document.getElementById('questionForm').addEventListener('submit', handleAddQuestion);
+}
+
+init();
